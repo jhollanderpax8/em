@@ -144,20 +144,6 @@ an event directly.}}
      it does NOT count: reactions read views, not events. If the honest answer is "nothing
      reads it", that's a question for the business, not a field to leave blank. -->
 
-> **Envelope** — this event adheres to your platform's standard event envelope: one fixed,
-> uniformly-applied field set (e.g. occurrence/ingest timestamps, actor identity) carried as
-> metadata on every event, not decided per event and never redeclared on this event's own
-> payload. See {{your platform's canonical event envelope doc/decision record}} for the exact
-> field list — and if that doc hasn't settled every field yet, say so here rather than
-> implying more is decided than actually is. Only domain fields specific to this event are
-> listed below.
-
-<!-- Keep the Envelope line and list domain facts only — never redeclare an envelope-carried
-     field as a row below. The envelope's field set is one platform-wide decision applied
-     identically to every event, not a per-slice or per-event choice — fill in the placeholder
-     above from your platform's canonical envelope doc/ADR, and if that doc leaves any field's
-     placement still open, say that explicitly rather than asserting it as settled. -->
-
 | Field | Type | Immutable Fact? | Source / Notes |
 |-------|------|-----------------|----------------|
 | {{field}} | {{Type}} | {{yes/no}} | {{where the value comes from}} |
