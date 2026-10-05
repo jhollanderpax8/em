@@ -191,3 +191,18 @@ version and a certified version, and `em upgrade` itself ships. Three behavior c
 | `em slice new --stub` / `em slice stub-all` — optional, for models without docs (MIL-184) | no action needed |
 | `em metrics --from` — reads history, writes nothing (MIL-170) | no action needed |
 | **Release note: run `em upgrade <model>.em` (dry-run, then `--apply`) in each consumer repo** | `em upgrade` |
+
+## 1.13.1
+
+The fix release: checks that passed without checking, an upgrade check that failed without
+saying why, and a generated CI scaffold that could not pass a lint gate. Two behavior changes.
+
+| What changed for a model repo | Handled by `em upgrade`? |
+|---|---|
+| **Behavior change:** `em upgrade --check` no longer fails on a repo with no state file — the `state-file` step scaffolds one (phase `discover`, step 1, no conformance or review claimed). A state file that exists but is unparseable still fails, and the final line now names the file and the missing bullets (MIL-257) | `state-file` — then run `em state set-phase` to record the model's real phase |
+| **Behavior change:** `em ci init` refuses to replace a managed block that was generated for a different model, unless `--force`; `--check` reports it as `different model`, not `stale` (MIL-256) | human: one model per generated block until multi-model support lands (MIL-233) |
+| Generated CI block changed: shellcheck-clean `run:` scripts and ASCII-only text, so `em ci init --check` reports `stale` until the block is refreshed (MIL-256) | `ci-block` |
+| `em slice reratify` also accepts a ratified, not-yet-implemented doc (`ready-to-implement` with `ratifiedBy:`): bumps `version:`, clears the sign-off, leaves `status:` alone; re-sign with `em slice ratify --by` (MIL-258) | no action needed — a new path; re-ratifying a shipped doc is unchanged |
+| `em coverage --slice <key>` — the pre-merge check for one slice whatever its status; with `--strict` it fails on an uncited invariant or on a slice that is not ratified. The default form is unchanged and still counts `implemented` docs only (MIL-255) | no action needed — switch a per-slice pre-merge check to `--slice` |
+| `--json` schema versions, both additive: coverage 1.1 → 1.2 (`slice`, `continuationOf`); upgrade 1.0 → 1.1 (`stateFileError` is `null` for an absent state file) (MIL-255, MIL-257) | no action needed |
+| **Release note: run `em skill sync` in each consumer repo** (implement contract §4 and §5 changed; the design skill gained a sibling-slice invariant check; four summaries corrected) (MIL-254, MIL-255, MIL-258, #189) | `skill-bundle` |
