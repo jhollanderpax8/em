@@ -188,6 +188,10 @@ em system codeowners [target]                                 # generate (or --c
 em system codeowners [target] -o, --output <path>             # the CODEOWNERS file to splice into (default: the first of CODEOWNERS, .github/CODEOWNERS, docs/CODEOWNERS that exists, else CODEOWNERS at the repo root)
 em system codeowners [target] --check                         # verify the committed file already carries the generated block; never writes, exit 1 on drift (CI)
 em system codeowners [target] --json                          # print a JSON document instead of the text report (see docs/cli.md)
+em system scope [target]                                      # check a change set against the seams (MIL-240): fail only when it alters a producer's public surface (or contract file) AND a consuming model's design dir together (`seam-crossing`); warn on other multi-model change sets. Files changed only by `Em-Upgrade:` commits are exempt. There is no override - review on the contract file is the gate (see docs/cli.md, docs/ci.md)
+em system scope [target] --base <rev>                         # the change set committed since <rev> (merge-base form, <rev>...HEAD); CI passes the PR base
+em system scope [target] --staged                             # also (or only) check what is staged right now; never exempted
+em system scope [target] --json                               # print a JSON document instead of the text report (see docs/cli.md)
 em contract                                                   # print the packaged implementation contract (reference/implement.md) to stdout — the agent-neutral discovery path for any agent that can run a shell, not just Claude Code (MIL-129); see docs/cli.md
 em mcp                                                        # start an MCP (Model Context Protocol) server over stdio (MIL-21) — a structured, agent-facing alternative to shelling out to `em`; every tool mirrors a CLI `--json` surface byte-for-byte. docs/mcp.md isn't vendored into the skill bundle — for the handshake and the full, current tool table (the list changes as commands gain MCP parity, so it's not repeated here — MIL-187) see https://github.com/milehimikey/em/blob/main/docs/mcp.md. Equivalent to running the `em-mcp` bin directly
 em skill install                                              # copy the event-modeling skill bundle into .claude/skills/ (event-modeling, event-modeling-discover/-design/-implement/-conform/-review, event-modeling-shared); across a structural bundle change (e.g. the MIL-157 split of the old single event-modeling/ directory into this six-directory bundle), `em skill sync` is the migration path — --force now performs the same reconcile (MIL-180)
@@ -732,6 +736,7 @@ not the prose above has caught up yet. `--slice-ready <key>`-only codes are excl
 | `both-ends-of-a-flow/reaction-no-command` | warning | Reaction with no command | Add the command it triggers, in this slice, or an explicit arrow to one. |
 | `both-ends-of-a-flow/ui-unbacked` | warning | `ui` with no read model or command | Add a `view` it displays, or the command it triggers. |
 | `both-ends-of-a-flow/view-unconsumed` | warning | Read model with no consumer | Add a `ui` or reaction that consumes it, or drop this instance. |
+| `code-spans-seam` | warning | Code change spans a seam | Keep one code module per model and change the two sides of a seam in separate change sets. |
 | `connection-legality/illegal-pair` | error | Illegal connection | Only ui→command→event→view→ui and view→reaction→command are legal — the message names the missing step. |
 | `consumer-not-adapted` | error | Consuming translation no longer matches the producer's public element | Update the translation's field block to the producer's current fields (a renamed field names its new name in the message). Additive producer changes never raise this — consumers tolerate unknown fields. |
 | `consumes-unknown-element` | error | `consumes` names no public element of that model | Point the ref at an element the producer marks `public` (`em export` lists them), or ask the producer to publish it. |
@@ -767,6 +772,7 @@ not the prose above has caught up yet. `--slice-ready <key>`-only codes are excl
 | `loops-to-forward` | error | `loops-to` target not earlier on the timeline | Point `loops-to` at an earlier view, or use `from` on a later `view … again` instance instead. |
 | `loops-to-unresolved` | error | `loops-to` target unresolved | Name a view that exists, or declare it before this event. |
 | `model-version-stale` | warning | Model version stale | Run `em model version bump` to record the current model content/slice-version vector. |
+| `multi-model-change-set` | warning | Change set touches more than one model | Prefer one model per change set. Unrelated models in one change set are fine; models joined by a seam are not, once a contract changes. |
 | `note-binding-dangling` | warning | Dangling cross-slice note | Create the doc at that path, or fix/remove the note. |
 | `note-binding-extra` | warning | Extra doc-binding note, ignored | Remove the note, or point it at the slice's actual bound doc. |
 | `note-binding-unratified` | warning | Unratified cross-slice note | Add `covers: <this-slice-key>` to that doc's frontmatter, or correct the note's path. |
@@ -779,6 +785,8 @@ not the prose above has caught up yet. `--slice-ready <key>`-only codes are excl
 | `reaction-from-future-view` | error | Backward timeline (reaction reads a future view) | Declare the view in or before the reaction's slice. |
 | `reaction-from-unresolved` | error | Unknown read-model source | Project the event into a view first, or fix the `from` reference. |
 | `seam-consumer-not-reaction` | error | Seam consumer is not a reaction | Point `to` at a translation/automation element (or a slice containing exactly one). |
+| `seam-crossing` | error | Change set alters a contract and its consumer together | Split the change set: land the producer's public-surface change first, then adapt the consuming model in a later change. Review on the contract file is the only override. |
+| `seam-crossing-greenfield` | warning | New public surface lands with its first consumer | Nothing to fix: a public element no consumer was bound to at the base revision is new surface, not a crossing. Later changes to it are crossings. |
 | `seam-duplicate` | warning | Duplicate seam | Remove the repeated `from`/`to` pair. |
 | `seam-endpoint-unresolved` | error | Seam endpoint does not resolve | Fix the ref to an element the named model actually exports (`em export` lists every ref), or re-declare the seam after a rename. |
 | `seam-source-not-public` | error | Seam source is not `public` | Mark the event/view `public` in its model, or point the seam at the element that is. |
