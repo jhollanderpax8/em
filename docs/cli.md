@@ -749,7 +749,9 @@ release train; versioning is not modeled):
 
 Every `model` carries the doc comment `Consumers tolerate unknown fields; additive changes do not
 break them.` `tag`, `renamed from` and `assigned` become `/** ... */` doc comments, never
-decorators. Field types map through the fixed public type table only:
+decorators. A public element's model-declared invariants (MIL-265) become one `/** INV-X: rule */`
+line each, in declaration order — inside the event's `model`, or above the command's `op` — so
+tightening a rule changes the committed contract; an internal element's invariants never appear. Field types map through the fixed public type table only:
 
 | em type | TypeSpec |
 |---|---|
@@ -799,6 +801,8 @@ slice, so moving an element between slices is not a contract change.
 | field added — on an event, view, or a type an event/view reaches | additive |
 | required field added — on a command (input) | breaking |
 | optional field added — on a command (input) | additive |
+| invariant added, or its rule text changed — on a public command or event (MIL-265) | breaking (the contract got tighter) |
+| invariant removed — on a public command or event (MIL-265) | additive (looser) |
 
 A declared type reached from both a command and an event/view takes the stricter rule.
 
@@ -806,6 +810,7 @@ A declared type reached from both a command and an event/view takes the stricter
 contract models/checkout/contracts/checkout.tsp is current
 breaking: event.order-submitted field "total" removed
 additive: event.order-submitted field "currency" added (required)
+breaking: command.submit-order invariant INV-CHK-2 added
 ```
 
 `--json` (`apiCheckSchemaVersion` `"1.0"`; MCP tool `api_check` returns the same document):
@@ -1250,6 +1255,14 @@ that section, only the bullet's/subheading's own line counts as the definition �
 continuation line or a bare paragraph, either of which may legitimately cite a sibling slice's ID
 while explaining this doc's own rule (MIL-155). Citation matching is word-boundary-anchored so
 `INV-KEY-1` never matches inside `INV-KEY-12`.
+
+**Model-declared invariants first (MIL-265).** An ID declared in the model by an `invariant`
+line (see [dsl.md](dsl.md#invariants)) belongs to the slice of the element that declares it,
+full stop: each in-scope slice's ledger lists its elements' model-declared IDs first (document
+order), then the IDs its doc defines that the model does not declare anywhere. A model-declared
+ID cited in another slice's doc is never credited to that slice — the MIL-149/155 cross-credit
+class is closed at the root for anything migrated into the model. A model with no `invariant`
+line produces byte-identical output to 1.13.
 
 | Flag | Effect |
 |---|---|
@@ -1963,8 +1976,13 @@ whose entries are verb-shaped:
   that producing command).
 - `downstream`/`upstream` results add `depth` (hop count from `--of`) to the same shape.
 - `slices` results carry `{ ref, name, index, pattern, status, personas, contexts, tags }`.
-- `invariant` results carry `{ id, sliceRef, sliceName, docPath, status, citations }` —
+- `invariant` results carry `{ id, sliceRef, sliceName, docPath, status, citations, rule, declaredIn }` —
   `citations` is `null` when `--tests` wasn't given, else `{ file, line }[]` (possibly empty).
+  `declaredIn` (query schema 1.2, MIL-265) is `"model"` for an id declared by an `invariant`
+  line in the `.em` file — owned by the slice of the element that declares it, whatever any doc's
+  prose says — or `"doc"` for the 1.13-style fallback (extracted from a slice doc's body, for ids
+  the model does not declare). `rule` is the model's quoted rule sentence, `null` for a
+  doc-declared id or an `invariant` line without one.
   Lookup is status-agnostic: an id declared in a `draft` doc is found like any other, with that
   status reported (`em coverage`'s in-scope rule decides which invariants *must* be cited, not
   which ones exist).

@@ -19,4 +19,9 @@ namespace Checkout {
    * Consumers tolerate unknown fields; additive changes do not break them.
    */
   model OrderCancelled {}
+
+  interface Commands {
+    /** INV-CHK-1: An order is submitted with a positive total */
+    op submitOrder(total: decimal, note?: string): void;
+  }
 }
